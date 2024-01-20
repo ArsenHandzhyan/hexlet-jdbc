@@ -2,51 +2,38 @@ package hexlet.code;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Objects;
 
 public class App {
-    // Нужно указывать базовое исключение,
-    // потому что выполнение запросов может привести к исключениям
     public static void main(String[] args) throws SQLException {
-        // Создаем соединение с базой в памяти
-        // База создается прямо во время выполнения этой строчки
-        // Здесь hexlet_test — это имя базы данных
-        var conn = DriverManager.getConnection("jdbc:h2:mem:hexlet_test");
+        try (var conn = DriverManager.getConnection("jdbc:h2:mem:hexlet")) {
+            var sql = "CREATE TABLE users (id BIGINT PRIMARY KEY AUTO_INCREMENT, username VARCHAR(255), phone VARCHAR(255))";
+            try (var statement = conn.createStatement()) {
+                statement.execute(sql);
+            }
+            var dao = new UserDAO(conn);
+            var user1 = new User("Maria", "888888888");
+            var user2 = new User("Victor", "1111111111");
+            var user3 = new User("Igor", "77777777777");
+            System.out.println(user1.getId());  // null
+            dao.save(user1);
+            dao.save(user2);
+            dao.save(user3);
+            System.out.print(user1.getId() + " " + user1.getName() + " " + user1.getPhone()); // Здесь уже выводится какой-то id
+            System.out.print(user2.getId() + " " + user2.getName() + " " + user3.getPhone());
+            System.out.println(user3.getId() + " " + user3.getName() + " " + user3.getPhone());
 
-        var sql = "CREATE TABLE users (id BIGINT PRIMARY KEY AUTO_INCREMENT, username VARCHAR(255), phone VARCHAR(255))";
-        // Чтобы выполнить запрос, создадим объект statement
-        var statement = conn.createStatement();
-        statement.execute(sql);
-        statement.close(); // В конце закрываем
-
-        var sql2 = "INSERT INTO users (username, phone) VALUES ('tommy', '123456789')";
-        var statement2 = conn.createStatement();
-        statement2.executeUpdate(sql2);
-        statement2.close();
-
-        var sql3 = "SELECT * FROM users";
-        var statement3 = conn.createStatement();
-        // Здесь вы видите указатель на набор данных в памяти СУБД
-        var resultSet = statement3.executeQuery(sql3);
-        // Набор данных — это итератор
-        // Мы перемещаемся по нему с помощью next() и каждый раз получаем новые значения
-        while (resultSet.next()) {
-        System.out.println(resultSet.getLong("id"));
-            System.out.println(resultSet.getString("username"));
-            System.out.println(resultSet.getString("phone"));
+// Возвращается Optional<User>
+            var user4 = dao.find(user1.getId()).get();
+            System.out.println(Objects.equals(user4.getId(), user1.getId())); // true
+            dao.delete(1L);
+            System.out.println("delete first element");
+            //dao.delete(2L);
+            System.out.println("delete second element");
+            dao.delete(3L);
+            System.out.println("delete threes element");
+            System.out.println(dao.find(1L));
+            System.out.println(dao.find(2L));
         }
-        statement3.close();
-
-
-//        var sql3 = "SELECT * FROM users";
-//        var statement3 = conn.createStatement();
-//        var resultSet = statement3.executeQuery(sql3);
-//        while (resultSet.next()) {
-//            System.out.println(resultSet.getLong("id"));
-//            System.out.println(resultSet.getString("username"));
-//            System.out.println(resultSet.getString("phone"));
-//        }
-//        statement3.close();
-        // Закрываем соединение
-        conn.close();
     }
 }
